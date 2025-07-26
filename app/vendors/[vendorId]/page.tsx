@@ -539,40 +539,44 @@ export default function VendorDetailPage({ params }: VendorDetailPageProps) {
                     <h2 className="text-2xl font-bold text-gray-800 mb-4">Ratings & Reviews</h2>
                     <div className="flex items-center gap-6 mb-6">
                       <div className="text-center">
-                        <div className="text-3xl font-bold text-gray-900">{ratingStats.averageRating.toFixed(1)}</div>
+                        <div className="text-3xl font-bold text-gray-900">{ratingStats ? ratingStats.averageRating.toFixed(1) : '0.0'}</div>
                         <div className="flex items-center gap-1 my-2">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <Star 
                               key={star}
                               className={`w-5 h-5 ${
-                                star <= ratingStats.averageRating 
+                                ratingStats && star <= ratingStats.averageRating 
                                   ? 'text-yellow-400 fill-current' 
                                   : 'text-gray-300'
                               }`}
                             />
                           ))}
                         </div>
-                        <p className="text-sm text-gray-600">{ratingStats.totalRatings} ratings</p>
+                        <p className="text-sm text-gray-600">{ratingStats ? ratingStats.totalRatings : 0} ratings</p>
                       </div>
                       <div className="flex-1">
-                        {Object.entries(ratingStats.ratingDistribution)
-                          .sort(([a], [b]) => Number(b) - Number(a))
-                          .map(([rating, count]) => (
-                            <div key={rating} className="flex items-center gap-2 mb-1">
-                              <span className="text-sm text-gray-600 w-3">{rating}</span>
-                              <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-yellow-400 rounded-full"
-                                  style={{ 
-                                    width: `${ratingStats.totalRatings > 0 
-                                      ? (count / ratingStats.totalRatings) * 100 
-                                      : 0}%` 
-                                  }}
-                                ></div>
+                        {ratingStats ? (
+                          Object.entries(ratingStats.ratingDistribution)
+                            .sort(([a], [b]) => Number(b) - Number(a))
+                            .map(([rating, count]) => (
+                              <div key={rating} className="flex items-center gap-2 mb-1">
+                                <span className="text-sm text-gray-600 w-3">{rating}</span>
+                                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-yellow-400 rounded-full"
+                                    style={{ 
+                                      width: `${ratingStats.totalRatings > 0 
+                                        ? (count / ratingStats.totalRatings) * 100 
+                                        : 0}%` 
+                                    }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm text-gray-600 w-8">{count}</span>
                               </div>
-                              <span className="text-sm text-gray-600 w-8">{count}</span>
-                            </div>
-                          ))}
+                            ))
+                        ) : (
+                          <div className="text-gray-400 text-sm">No ratings yet.</div>
+                        )}
                       </div>
                     </div>
                     
