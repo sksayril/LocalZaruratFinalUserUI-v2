@@ -46,10 +46,13 @@ export default function Header() {
             {/* Bell Icon */}
             <Bell className="w-5 h-5 text-gray-700" />
             {/* Login/Sign Up Button */}
-            <button className="bg-blue-600 text-white px-4 md:px-5 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 ml-2">
+            <Link 
+              href="/login"
+              className="bg-blue-600 text-white px-4 md:px-5 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 ml-2 inline-block transition-all duration-300 hover:scale-105"
+            >
               <span className="hidden md:block">Login / Sign Up</span>
               <span className="md:hidden">Login</span>
-            </button>
+            </Link>
           </nav>
 
           {/* Mobile Menu Button */}
@@ -89,9 +92,12 @@ export default function Header() {
                 <Bell className="w-4 h-4" />
                 <span>Notifications</span>
               </div>
-              <button className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg text-sm font-bold hover:bg-blue-700">
+              <Link 
+                href="/login"
+                className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg text-sm font-bold hover:bg-blue-700 block text-center transition-all duration-300"
+              >
                 Login / Sign Up
-              </button>
+              </Link>
             </div>
           </div>
         )}
