@@ -1,4 +1,4 @@
-// File: C:\Users\sksay\Desktop\api\LocalZaruratFinalUserUI-v2\app\subcategories\[mainCategoryId]\page.tsx
+// File: C:\TaskFolder\my-center-\cripcocoede-it-tech\LOCAL-ZARURAT\LocalZaruratFinalUserUI\app\subcategories\[mainCategoryId]\page.tsx
 import * as entry from '../../../../../app/subcategories/[mainCategoryId]/page.js'
 import type { ResolvingMetadata } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

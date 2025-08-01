@@ -11,11 +11,6 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/login/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/login/page.js"
-    ],
     "/signup/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -26,15 +21,20 @@
       "static/chunks/main-app.js",
       "static/chunks/app/subcategories/[mainCategoryId]/page.js"
     ],
-    "/subcategories/[mainCategoryId]/[subcategorySlug]/page": [
+    "/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/subcategories/[mainCategoryId]/[subcategorySlug]/page.js"
+      "static/chunks/app/login/page.js"
     ],
     "/vendors/[vendorId]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/vendors/[vendorId]/page.js"
+    ],
+    "/subcategories/[mainCategoryId]/[subcategorySlug]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/subcategories/[mainCategoryId]/[subcategorySlug]/page.js"
     ],
     "/not-found": [
       "static/chunks/webpack.js",

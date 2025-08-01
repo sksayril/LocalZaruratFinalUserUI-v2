@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { Metadata } from 'next';
 import { useVendorDetails } from '@/hooks/useVendorDetails';
-import { ArrowLeft, Star, MapPin, Phone, Mail, Calendar, Award, CheckCircle, Shield, Wallet, Heart, Eye, ShoppingCart, Share2, MessageCircle, ThumbsUp, ThumbsDown, Users, Package, TrendingUp, Bookmark, Edit3, Crown, Zap, Clock, Users as UsersIcon } from 'lucide-react';
+import { useLocation } from '@/lib/location-context';
+import { ArrowLeft, Star, MapPin, Phone, Mail, Calendar, Award, CheckCircle, Shield, Wallet, Heart, Eye, ShoppingCart, Share2, MessageCircle, ThumbsUp, ThumbsDown, Users, Package, TrendingUp, Bookmark, Edit3, Crown, Zap, Clock, Users as UsersIcon, Navigation, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { VendorCardSkeleton, HeroSectionSkeleton, BreadcrumbSkeleton, FormSkeleton } from '@/components/ui/skeleton-loaders';
 
@@ -17,6 +18,35 @@ export default function VendorDetailPage({ params }: VendorDetailPageProps) {
   const { vendorId } = params;
   const [activeTab, setActiveTab] = useState('overview');
   const { vendor, products, ratingStats, recentReviews, isFavorited, loading, error } = useVendorDetails(vendorId);
+  const { location: userLocation } = useLocation();
+
+  // Calculate distance between user and vendor
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c; // Distance in kilometers
+    return distance;
+  };
+
+  // Get distance if both locations are available
+  const getDistance = () => {
+    if (userLocation && vendor?.vendorDetails?.shopAddress?.coordinates) {
+      const distance = calculateDistance(
+        userLocation.latitude,
+        userLocation.longitude,
+        vendor.vendorDetails.shopAddress.coordinates.latitude,
+        vendor.vendorDetails.shopAddress.coordinates.longitude
+      );
+      return distance < 1 ? `${(distance * 1000).toFixed(0)}m` : `${distance.toFixed(1)}km`;
+    }
+    return null;
+  };
 
   // Debug logging
   console.log('VendorDetailPage: vendorId:', vendorId);
@@ -109,7 +139,7 @@ export default function VendorDetailPage({ params }: VendorDetailPageProps) {
             {vendor.vendorDetails.subCategory.name}
           </Link>
           <span className="text-gray-400">›</span>
-          <span className="text-gray-800 font-semibold">{vendor.vendorDetails.shopName}</span>
+          <span className="text-gray-800 font-semibold">{vendor.name}</span>
         </div>
 
         {/* Premium Hero Section with Enhanced Image Gallery */}
@@ -203,18 +233,18 @@ export default function VendorDetailPage({ params }: VendorDetailPageProps) {
             <div className="flex flex-col lg:flex-row lg:items-start gap-8">
               {/* Left Side - Vendor Details */}
               <div className="flex-1">
-                {/* Logo and Name */}
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="w-16 h-16 bg-black rounded-lg flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold text-sm text-center leading-tight">
-                      {vendor.vendorDetails.shopName.split(' ').map(word => word.charAt(0)).join('')}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{vendor.vendorDetails.shopName}</h1>
-                      <ThumbsUp className="w-5 h-5 text-blue-500" />
-                    </div>
+                                    {/* Logo and Name */}
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-16 h-16 bg-black rounded-lg flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-bold text-sm text-center leading-tight">
+                          {vendor.name.split(' ').map(word => word.charAt(0)).join('')}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{vendor.name}</h1>
+                          <ThumbsUp className="w-5 h-5 text-blue-500" />
+                        </div>
                     
                     {/* Rating and Badges */}
                     <div className="flex items-center gap-4 mb-3">
@@ -250,31 +280,35 @@ export default function VendorDetailPage({ params }: VendorDetailPageProps) {
                       </div>
                       <div className="flex items-center gap-1 text-sm text-gray-600">
                         <Clock className="w-4 h-4" />
-                        <span>20 Years in Healthcare</span>
+                        <span>Member since {new Date(vendor.createdAt).getFullYear()}</span>
                       </div>
                     </div>
 
                     {/* Service Tags */}
                     <div className="flex items-center gap-2 mb-4">
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                        <span className="w-3 h-3">💄</span>
-                        Bridal Makeup
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                        {vendor.vendorDetails.mainCategory.name}
                       </span>
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                        <span className="w-3 h-3">💇‍♀️</span>
-                        Hair Spa
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                        {vendor.vendorDetails.subCategory.name}
                       </span>
                     </div>
 
-                    {/* Category Tags */}
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                        Skin Care Clinics
-                      </span>
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
-                        Salons
-                      </span>
-                    </div>
+                    {/* Coordinates Display */}
+                    {vendor.vendorDetails.shopAddress.coordinates && (
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                          <Navigation className="w-3 h-3" />
+                          {vendor.vendorDetails.shopAddress.coordinates?.latitude.toFixed(6)}, {vendor.vendorDetails.shopAddress.coordinates?.longitude.toFixed(6)}
+                        </span>
+                        {getDistance() && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
+                            <MapPin className="w-3 h-3" />
+                            {getDistance()} away
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -299,6 +333,39 @@ export default function VendorDetailPage({ params }: VendorDetailPageProps) {
                     </svg>
                     WhatsApp
                   </button>
+                  
+                  {/* Location Action Buttons */}
+                  {vendor.vendorDetails.shopAddress.coordinates && (
+                    <div className="space-y-2">
+                      <button 
+                        onClick={() => {
+                          const coordinates = vendor.vendorDetails.shopAddress.coordinates;
+                          if (coordinates) {
+                            const { latitude, longitude } = coordinates;
+                            window.open(`https://www.google.com/maps?q=${latitude},${longitude}`, '_blank');
+                          }
+                        }}
+                        className="w-full bg-blue-600 text-white px-6 py-4 rounded-lg font-bold hover:bg-blue-700 transition-all duration-300 flex items-center justify-center gap-2"
+                      >
+                        <MapPin className="w-5 h-5" />
+                        View on Google Maps
+                      </button>
+                      
+                      <button 
+                        onClick={() => {
+                          const coordinates = vendor.vendorDetails.shopAddress.coordinates;
+                          if (coordinates) {
+                            const { latitude, longitude } = coordinates;
+                            window.open(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`, '_blank');
+                          }
+                        }}
+                        className="w-full bg-green-600 text-white px-6 py-4 rounded-lg font-bold hover:bg-green-700 transition-all duration-300 flex items-center justify-center gap-2"
+                      >
+                        <Navigation className="w-5 h-5" />
+                        Get Directions
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Rating Input */}
@@ -399,7 +466,7 @@ export default function VendorDetailPage({ params }: VendorDetailPageProps) {
               {/* Overview Section */}
               {activeTab === 'overview' && (
                 <div className="space-y-6">
-                  <h2 className="text-2xl font-bold text-gray-800">{vendor.vendorDetails.shopName}</h2>
+                  <h2 className="text-2xl font-bold text-gray-800">{vendor.name}</h2>
                   <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                     <p className="text-gray-600 text-lg">{vendor.vendorDetails.shopDescription}</p>
                     <div className="mt-4 flex flex-col gap-3">
@@ -471,6 +538,61 @@ export default function VendorDetailPage({ params }: VendorDetailPageProps) {
                         </div>
                       </div>
                     </div>
+                    
+                    {/* Location Details Card */}
+                    {vendor.vendorDetails.shopAddress.coordinates && (
+                      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 space-y-4">
+                        <div className="flex items-center gap-3 mb-4">
+                          <Navigation className="w-6 h-6 text-blue-600" />
+                          <h3 className="text-lg font-semibold">Location Details</h3>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">Latitude:</span>
+                            <span className="font-mono text-sm">{vendor.vendorDetails.shopAddress.coordinates?.latitude.toFixed(6)}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">Longitude:</span>
+                            <span className="font-mono text-sm">{vendor.vendorDetails.shopAddress.coordinates?.longitude.toFixed(6)}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">Pincode:</span>
+                            <span className="text-sm">{vendor.vendorDetails.shopAddress.pincode}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="pt-4 space-y-2">
+                          <button 
+                            onClick={() => {
+                              const coordinates = vendor.vendorDetails.shopAddress.coordinates;
+                              if (coordinates) {
+                                const { latitude, longitude } = coordinates;
+                                window.open(`https://www.google.com/maps?q=${latitude},${longitude}`, '_blank');
+                              }
+                            }}
+                            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-all duration-300 flex items-center justify-center gap-2"
+                          >
+                            <MapPin className="w-4 h-4" />
+                            View on Maps
+                          </button>
+                          
+                          <button 
+                            onClick={() => {
+                              const coordinates = vendor.vendorDetails.shopAddress.coordinates;
+                              if (coordinates) {
+                                const { latitude, longitude } = coordinates;
+                                window.open(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`, '_blank');
+                              }
+                            }}
+                            className="w-full bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition-all duration-300 flex items-center justify-center gap-2"
+                          >
+                            <Navigation className="w-4 h-4" />
+                            Get Directions
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -821,6 +943,20 @@ export default function VendorDetailPage({ params }: VendorDetailPageProps) {
                           <Calendar className="w-4 h-4 text-orange-500" />
                           <span>Listed {new Date(vendor.vendorDetails.shopListedAt).toLocaleDateString()}</span>
                         </div>
+                        {vendor.vendorDetails.shopAddress.coordinates && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Navigation className="w-4 h-4 text-green-500" />
+                            <span>
+                              {vendor.vendorDetails.shopAddress.coordinates?.latitude.toFixed(4)}, {vendor.vendorDetails.shopAddress.coordinates?.longitude.toFixed(4)}
+                            </span>
+                          </div>
+                        )}
+                        {getDistance() && (
+                          <div className="flex items-center gap-2 text-sm text-orange-600">
+                            <MapPin className="w-4 h-4" />
+                            <span className="font-medium">{getDistance()} away</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 

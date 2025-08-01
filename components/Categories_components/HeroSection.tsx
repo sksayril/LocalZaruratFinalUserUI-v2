@@ -2,8 +2,12 @@
 
 import { Search, MapPin, Download, Mic, ChevronDown } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
+import { useLocation } from '@/lib/location-context';
+import LocationPermission from '@/components/LocationPermission';
 
 export default function HeroSection() {
+  const { locationName, permissionStatus, isLoading } = useLocation();
+
   return (
     <div className="bg-gray-50 py-4 md:py-8">
       <div className="max-w-7xl mx-auto px-4">
@@ -19,11 +23,17 @@ export default function HeroSection() {
                 {/* Location Input */}
                 <div className="flex items-center px-3 md:px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200 min-w-[140px] md:min-w-[180px]">
                   <MapPin className="w-4 h-4 md:w-5 md:h-5 text-gray-400 mr-2 flex-shrink-0" />
-                  <input
-                    type="text"
-                    placeholder="Mumbai"
-                    className="bg-transparent outline-none text-gray-700 w-full placeholder-gray-500 font-medium text-sm md:text-base"
-                  />
+                  {locationName ? (
+                    <span className="text-gray-700 font-medium text-sm md:text-base">
+                      {locationName}
+                    </span>
+                  ) : (
+                    <LocationPermission 
+                      variant="inline" 
+                      showLocationName={false}
+                      className="flex-1"
+                    />
+                  )}
                 </div>
                 {/* Search Input */}
                 <div className="flex items-center flex-1 px-3 md:px-4 py-3">

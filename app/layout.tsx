@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { LocationProvider } from '@/lib/location-context';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
@@ -69,9 +70,11 @@ export default function RootLayout({
         <meta httpEquiv="x-dns-prefetch-control" content="on" />
       </head>
       <body className={`${inter.className} antialiased`}>
-        <main className="relative">
-          {children}
-        </main>
+        <LocationProvider>
+          <main className="relative">
+            {children}
+          </main>
+        </LocationProvider>
         
         {/* Preload critical images */}
         <link
