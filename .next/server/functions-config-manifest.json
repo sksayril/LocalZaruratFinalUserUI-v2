@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "functions": {
+    "/Categories/dentists": {},
+    "/Categories/beautyspa": {},
+    "/Categories/courierservice": {},
+    "/Categories/contractors": {},
+    "/Categories/education": {},
+    "/Categories/estateagent": {},
+    "/Categories/drivingschools": {},
+    "/Categories/hospitals": {},
+    "/Categories/eventorganisers": {},
+    "/Categories/homedecor": {},
+    "/Categories/packersmovers": {},
+    "/Categories/gym": {},
+    "/Categories/petshops": {},
+    "/Categories/loans": {},
+    "/Categories/hotels": {},
+    "/Categories/pghostels": {},
+    "/Categories/restaurants": {},
+    "/Categories/quickbites": {},
+    "/Categories/renthire": {},
+    "/Categories/sweettooth": {},
+    "/Categories/weddingplanning": {},
+    "/Categories/wedding": {},
+    "/restaurants/[restaurant]/[subcategory]": {},
+    "/restaurants/[restaurant]": {},
+    "/restaurants": {},
+    "/": {},
+    "/subcategories/[mainCategoryId]": {}
+  }
+}

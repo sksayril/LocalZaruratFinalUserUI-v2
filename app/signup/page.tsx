@@ -1,10 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, ArrowLeft, Mail, Lock, Phone, User, MapPin, Calendar, Check } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
 
 export default function SignupPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { register, user, loading: authLoading, isLoading, error: authError, clearError } = useAuth();
+  
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -15,12 +21,13 @@ export default function SignupPage() {
     password: '',
     confirmPassword: '',
     city: '',
+    state: '',
+    pincode: '',
     dateOfBirth: '',
     accountType: 'customer',
     agreeToTerms: false,
     agreeToMarketing: false
   });
-  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -90,6 +97,18 @@ export default function SignupPage() {
       newErrors.city = 'City is required';
     }
 
+    // State validation
+    if (!formData.state) {
+      newErrors.state = 'State is required';
+    }
+
+    // Pincode validation
+    if (!formData.pincode) {
+      newErrors.pincode = 'Pincode is required';
+    } else if (!/^\d{6}$/.test(formData.pincode)) {
+      newErrors.pincode = 'Pincode must be 6 digits';
+    }
+
     // Date of Birth validation
     if (!formData.dateOfBirth) {
       newErrors.dateOfBirth = 'Date of birth is required';
@@ -111,6 +130,39 @@ export default function SignupPage() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user && !authLoading) {
+      router.push('/');
+    }
+  }, [user, authLoading, router]);
+
+  // Clear auth error when component mounts
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
+
+  // Auto-fill form with test data
+  useEffect(() => {
+    const testData = {
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john1@example.com',
+      phone: '+1234567891',
+      password: 'securepassword123',
+      confirmPassword: 'securepassword123',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      pincode: '400001',
+      dateOfBirth: '1990-01-01', // Default date of birth
+      accountType: 'customer',
+      agreeToTerms: true,
+      agreeToMarketing: false
+    };
+
+    setFormData(testData);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -118,26 +170,33 @@ export default function SignupPage() {
       return;
     }
 
-    setLoading(true);
+    clearError();
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const userData = {
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        role: formData.accountType,
+        address: {
+          street: '', // Will be updated by user later
+          city: formData.city,
+          state: formData.state,
+          pincode: formData.pincode,
+          country: 'India'
+        },
+        dateOfBirth: formData.dateOfBirth
+      };
+
+      await register(userData);
       
-      // TODO: Implement actual signup logic
-      console.log('Signup data:', {
-        ...formData,
-        password: '[HIDDEN]',
-        confirmPassword: '[HIDDEN]'
-      });
-      
-      // Redirect to login or dashboard after successful signup
-      window.location.href = '/login?message=Account created successfully! Please sign in.';
+      // Redirect to home page after successful registration
+      router.push('/');
       
     } catch (error) {
-      setErrors({ general: 'Signup failed. Please try again.' });
-    } finally {
-      setLoading(false);
+      // Error is handled by the auth context
+      console.error('Registration failed:', error);
     }
   };
 
@@ -209,6 +268,13 @@ export default function SignupPage() {
                 {errors.general && (
                   <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                     {errors.general}
+                  </div>
+                )}
+
+                {/* Auth Error */}
+                {authError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                    {authError}
                   </div>
                 )}
 
@@ -399,7 +465,7 @@ export default function SignupPage() {
                   </div>
                 </div>
 
-                {/* City and Date of Birth */}
+                {/* City, State, Pincode and Date of Birth */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -424,6 +490,60 @@ export default function SignupPage() {
                     </div>
                     {errors.city && (
                       <p className="mt-1 text-sm text-red-600">{errors.city}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      State
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <MapPin className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleInputChange}
+                        placeholder="Enter your state"
+                        className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
+                          errors.state
+                            ? 'border-red-300 bg-red-50'
+                            : 'border-gray-300 bg-white'
+                        }`}
+                      />
+                    </div>
+                    {errors.state && (
+                      <p className="mt-1 text-sm text-red-600">{errors.state}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Pincode
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <MapPin className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        name="pincode"
+                        value={formData.pincode}
+                        onChange={handleInputChange}
+                        placeholder="Enter your pincode"
+                        className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
+                          errors.pincode
+                            ? 'border-red-300 bg-red-50'
+                            : 'border-gray-300 bg-white'
+                        }`}
+                      />
+                    </div>
+                    {errors.pincode && (
+                      <p className="mt-1 text-sm text-red-600">{errors.pincode}</p>
                     )}
                   </div>
 
@@ -497,10 +617,10 @@ export default function SignupPage() {
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={isLoading}
                   className="w-full bg-gradient-to-r from-green-600 to-blue-700 text-white py-3 px-4 rounded-lg font-semibold hover:from-green-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? (
+                  {isLoading ? (
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       Creating Account...

@@ -3,8 +3,11 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Search, MapPin, Globe, Mail, Briefcase, Zap, List, Download, Bell, ChevronDown, Menu, X } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
+import UserProfile from '@/components/UserProfile';
 
 export default function Header() {
+  const { user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
@@ -45,14 +48,18 @@ export default function Header() {
             </div>
             {/* Bell Icon */}
             <Bell className="w-5 h-5 text-gray-700" />
-            {/* Login/Sign Up Button */}
-            <Link 
-              href="/login"
-              className="bg-blue-600 text-white px-4 md:px-5 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 ml-2 inline-block transition-all duration-300 hover:scale-105"
-            >
-              <span className="hidden md:block">Login / Sign Up</span>
-              <span className="md:hidden">Login</span>
-            </Link>
+            {/* User Profile or Login Button */}
+            {user ? (
+              <UserProfile />
+            ) : (
+              <Link 
+                href="/login"
+                className="bg-blue-600 text-white px-4 md:px-5 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 ml-2 inline-block transition-all duration-300 hover:scale-105"
+              >
+                <span className="hidden md:block">Login / Sign Up</span>
+                <span className="md:hidden">Login</span>
+              </Link>
+            )}
           </nav>
 
           {/* Mobile Menu Button */}
@@ -92,12 +99,25 @@ export default function Header() {
                 <Bell className="w-4 h-4" />
                 <span>Notifications</span>
               </div>
-              <Link 
-                href="/login"
-                className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg text-sm font-bold hover:bg-blue-700 block text-center transition-all duration-300"
-              >
-                Login / Sign Up
-              </Link>
+              {user ? (
+                <div className="py-2">
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
+                    <div className="w-8 h-8 bg-gradient-to-r from-green-600 to-blue-700 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                      {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <span className="text-sm font-medium text-gray-700">
+                      {user.name}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <Link 
+                  href="/login"
+                  className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg text-sm font-bold hover:bg-blue-700 block text-center transition-all duration-300"
+                >
+                  Login / Sign Up
+                </Link>
+              )}
             </div>
           </div>
         )}

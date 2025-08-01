@@ -122,7 +122,7 @@ export default function LocationPermission({
 
     if (location) {
       return (
-        <Alert className="border-green-200 bg-green-50" className={className}>
+        <Alert className={`border-green-200 bg-green-50 ${className}`}>
           <CheckCircle className="h-4 w-4 text-green-600" />
           <AlertDescription>
             <div className="flex items-center justify-between">

@@ -1,11 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, ArrowLeft, Mail, Lock, Phone, User } from 'lucide-react';
-import type { Metadata } from 'next';
+import { useAuth } from '@/lib/auth-context';
+import { ROUTES } from '@/lib/routes';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login, user, loading: authLoading, isLoading, error: authError, clearError } = useAuth();
+  
   const [showPassword, setShowPassword] = useState(false);
   const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
   const [formData, setFormData] = useState({
@@ -56,6 +62,18 @@ export default function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user && !authLoading) {
+      router.push('/');
+    }
+  }, [user, authLoading, router]);
+
+  // Clear auth error when component mounts
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -63,27 +81,18 @@ export default function LoginPage() {
       return;
     }
 
-    setLoading(true);
+    clearError();
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const email = loginMethod === 'email' ? formData.email : formData.phone;
+      await login(email, formData.password);
       
-      // TODO: Implement actual login logic
-      console.log('Login data:', {
-        loginMethod,
-        identifier: loginMethod === 'email' ? formData.email : formData.phone,
-        password: formData.password,
-        rememberMe: formData.rememberMe
-      });
-      
-      // Redirect to home or dashboard after successful login
-      window.location.href = '/';
+      // Redirect to home page after successful login
+      router.push('/');
       
     } catch (error) {
-      setErrors({ general: 'Login failed. Please try again.' });
-    } finally {
-      setLoading(false);
+      // Error is handled by the auth context
+      console.error('Login failed:', error);
     }
   };
 
@@ -155,6 +164,13 @@ export default function LoginPage() {
                 {errors.general && (
                   <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                     {errors.general}
+                  </div>
+                )}
+
+                {/* Auth Error */}
+                {authError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                    {authError}
                   </div>
                 )}
 
@@ -240,7 +256,7 @@ export default function LoginPage() {
                     <span className="ml-2 text-sm text-gray-600">Remember me</span>
                   </label>
                   <Link 
-                    href="/forgot-password"
+                    href={ROUTES.FORGOT_PASSWORD}
                     className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                   >
                     Forgot password?
@@ -250,10 +266,10 @@ export default function LoginPage() {
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={isLoading}
                   className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? (
+                  {isLoading ? (
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       Signing in...

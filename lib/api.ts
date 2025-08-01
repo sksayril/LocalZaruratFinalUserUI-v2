@@ -46,11 +46,31 @@ export interface RegisterRequest {
   phone: string;
   role: string;
   address: UserAddress;
+  dateOfBirth?: string;
 }
 
 export interface LoginRequest {
   email: string;
   password: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  password: string;
+  confirmPassword: string;
+}
+
+export interface VerifyEmailRequest {
+  token: string;
+}
+
+export interface VerifyPhoneRequest {
+  phone: string;
+  otp: string;
 }
 
 export interface AuthResponse {
@@ -90,190 +110,157 @@ export interface ProfileUpdateRequest {
   profileImage?: string;
 }
 
-const API_BASE_URL = 'https://api.localzarurat.com/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.localzarurat.com/api';
+
+// Enhanced error handling utility
+class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public code?: string
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+// Generic API request function with better error handling
+async function apiRequest<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  try {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new ApiError(
+        data.message || `Request failed with status ${response.status}`,
+        response.status,
+        data.code
+      );
+    }
+
+    return data;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new ApiError('Network error. Please check your connection.', 0);
+    }
+    throw new ApiError('An unexpected error occurred.', 500);
+  }
+}
 
 // Authentication API functions
 export async function registerUser(userData: RegisterRequest): Promise<AuthResponse> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `Registration failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('Registration failed. Please try again.');
-  }
+  return apiRequest<AuthResponse>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(userData),
+  });
 }
 
 export async function loginUser(credentials: LoginRequest): Promise<AuthResponse> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `Login failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('Login failed. Please check your credentials.');
-  }
+  return apiRequest<AuthResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(credentials),
+  });
 }
 
 export async function getCurrentUser(token: string): Promise<User> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/me`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch user data: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('Failed to fetch user data.');
-  }
+  const response = await apiRequest<{ data: User }>('/auth/me', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
 }
 
 export async function updateProfile(token: string, profileData: ProfileUpdateRequest): Promise<User> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(profileData),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `Profile update failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('Profile update failed. Please try again.');
-  }
+  const response = await apiRequest<{ data: User }>('/auth/profile', {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(profileData),
+  });
+  return response.data;
 }
 
 export async function logoutUser(token: string): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+    await apiRequest<void>('/auth/logout', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
     });
-
-    if (!response.ok) {
-      throw new Error(`Logout failed: ${response.status}`);
-    }
   } catch (error) {
     // Don't throw error for logout as it's not critical
-    // Just log for debugging purposes
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('Logout API call failed:', error);
-    }
+    console.warn('Logout API call failed:', error);
   }
+}
+
+export async function forgotPassword(data: ForgotPasswordRequest): Promise<{ success: boolean; message: string }> {
+  return apiRequest<{ success: boolean; message: string }>('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function resetPassword(data: ResetPasswordRequest): Promise<{ success: boolean; message: string }> {
+  return apiRequest<{ success: boolean; message: string }>('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function verifyEmail(data: VerifyEmailRequest): Promise<{ success: boolean; message: string }> {
+  return apiRequest<{ success: boolean; message: string }>('/auth/verify-email', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function verifyPhone(data: VerifyPhoneRequest): Promise<{ success: boolean; message: string }> {
+  return apiRequest<{ success: boolean; message: string }>('/auth/verify-phone', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 // Categories API functions
 export async function fetchCategories(): Promise<Category[]> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/customer/categories`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      next: { revalidate: 0 },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch categories: ${response.status}`);
-    }
-
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error('API request was not successful');
-    }
-
-    return data.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('Failed to fetch categories.');
-  }
+  const response = await apiRequest<{ success: boolean; data: Category[] }>('/customer/categories', {
+    method: 'GET',
+    next: { revalidate: 0 },
+  });
+  return response.data;
 }
 
 export async function fetchSubcategories(mainCategoryId: string): Promise<Subcategory[]> {
-  try {
-    if (!mainCategoryId || mainCategoryId.trim() === '') {
-      throw new Error('Main category ID is required');
-    }
-
-    const response = await fetch(`${API_BASE_URL}/customer/categories/${mainCategoryId}/subcategories`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      next: { revalidate: 0 },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch subcategories: ${response.status}`);
-    }
-
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error('API request was not successful');
-    }
-
-    return data.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('Failed to fetch subcategories.');
+  if (!mainCategoryId || mainCategoryId.trim() === '') {
+    throw new ApiError('Main category ID is required', 400);
   }
+
+  const response = await apiRequest<{ success: boolean; data: Subcategory[] }>(
+    `/customer/categories/${mainCategoryId}/subcategories`,
+    {
+      method: 'GET',
+      next: { revalidate: 0 },
+    }
+  );
+  return response.data;
 }
 
 // Updated Vendor interfaces based on actual API response
@@ -534,100 +521,39 @@ export async function fetchVendors(
   page: number = 1, 
   limit: number = 10
 ): Promise<{ data: VendorsResponse; pagination: Pagination }> {
-  try {
-    if (!subcategoryId || subcategoryId.trim() === '') {
-      throw new Error('Subcategory ID is required');
-    }
-
-    const response = await fetch(
-      `${API_BASE_URL}/customer/subcategories/${subcategoryId}/vendors?page=${page}&limit=${limit}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        next: { revalidate: 0 },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch vendors: ${response.status}`);
-    }
-
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error('API request was not successful');
-    }
-
-    return {
-      data: data.data,
-      pagination: data.pagination,
-    };
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('Failed to fetch vendors.');
+  if (!subcategoryId || subcategoryId.trim() === '') {
+    throw new ApiError('Subcategory ID is required', 400);
   }
+
+  const response = await apiRequest<VendorsApiResponse>(
+    `/customer/subcategories/${subcategoryId}/vendors?page=${page}&limit=${limit}`,
+    {
+      method: 'GET',
+      next: { revalidate: 0 },
+    }
+  );
+
+  return {
+    data: response.data,
+    pagination: response.pagination,
+  };
 }
 
 export async function fetchVendorDetails(vendorId: string): Promise<VendorDetailResponse> {
-  try {
-    if (!vendorId || vendorId.trim() === '') {
-      throw new Error('Vendor ID is required');
-    }
-
-    const response = await fetch(`${API_BASE_URL}/customer/vendors/${vendorId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      next: { revalidate: 0 },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch vendor details: ${response.status}`);
-    }
-
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error('API request was not successful');
-    }
-
-    return data.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('Failed to fetch vendor details.');
+  if (!vendorId || vendorId.trim() === '') {
+    throw new ApiError('Vendor ID is required', 400);
   }
+
+  const response = await apiRequest<VendorDetailApiResponse>(
+    `/customer/vendors/${vendorId}`,
+    {
+      method: 'GET',
+      next: { revalidate: 0 },
+    }
+  );
+
+  return response.data;
 }
 
-// Generic API request function
-export async function apiRequest<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `API request failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('API request failed.');
-  }
-} 
+// Export the ApiError class for use in components
+export { ApiError }; 
